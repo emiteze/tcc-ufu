@@ -1,5 +1,5 @@
-./docker/*
-./bin/*
-./coverage.html
-./coverage.out
+docker/
+bin/
+coverage.html
+coverage.out
 .idea/*

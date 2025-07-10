@@ -13,7 +13,7 @@ type Config struct {
 // Load returns configuration loaded from environment variables
 func Load() *Config {
 	return &Config{
-		AWSRegion:        getEnv("AWS_REGION", "us-west-2"),
+		AWSRegion:        getEnv("AWS_REGION", "us-east-1"),
 		DynamoDBEndpoint: getEnv("DYNAMODB_ENDPOINT", "http://localhost:8000"),
 		TableName:        getEnv("TABLE_NAME", "Customers"),
 		Port:             getEnv("PORT", "8080"),
@@ -22,7 +22,7 @@ func Load() *Config {
 
 // getEnv retrieves an environment variable or returns a default value
 func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists {
+	if value, exists := os.LookupEnv(key); exists && value != "" {
 		return value
 	}
 	return fallback
