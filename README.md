@@ -5,14 +5,12 @@
 ### Dev
 
 AWS Account Id: 760347630853 \
-AWS Account Name: TCC-UFU-Dev \
-AWS Email: emiteze+dev@hotmail.com
+AWS Account Name: TCC-UFU-Dev
 
 ### Prod
 
 AWS Account Id: 131204617414 \
-AWS Account Name: TCC-UFU-Prod \
-AWS Email: emiteze+prod@hotmail.com
+AWS Account Name: TCC-UFU-Prod
 
 ## API
 
