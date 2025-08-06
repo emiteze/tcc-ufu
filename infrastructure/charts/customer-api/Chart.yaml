@@ -1,0 +1,15 @@
+apiVersion: v2
+name: customer-api
+description: A Helm chart for Customer Management REST API
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - customer
+  - api
+  - golang
+  - dynamodb
+home: https://github.com/emiteze/tcc-ufu
+maintainers:
+  - name: TCC UFU Team
+    email: contact@example.com
