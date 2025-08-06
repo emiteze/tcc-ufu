@@ -62,9 +62,12 @@ provider "helm" {
 locals {
   name = "${var.project_name}-${var.environment}"
   region = "us-east-1"
+  cluster_name  = module.eks.cluster_name
 
-  istio_chart_url     = "https://istio-release.storage.googleapis.com/charts"
-  istio_chart_version = "1.20.2"
+  # Replace with your desired add-on version.
+  # For Sidecar mode, use the standard version format (e.g., v1.22.3-eksbuild.1).
+  # For Ambient mode, add an extra '0' in the version number (e.g., v1.22.30-eksbuild.1).
+  istio_addon_version = "v1.26.0-eksbuild.1"
 
   tags = {
     Project     = var.project_name

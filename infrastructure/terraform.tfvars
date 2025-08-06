@@ -13,7 +13,7 @@ table_name = "Customers"
 app_port = "8080"
 
 # EKS Configuration
-kubernetes_version = "1.30"
+kubernetes_version = "1.32"
 
 # Node Group Configuration
 node_group_instance_types = ["t3.medium"]
