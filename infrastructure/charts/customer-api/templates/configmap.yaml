@@ -8,3 +8,4 @@ data:
   AWS_REGION: {{ .Values.config.awsRegion | quote }}
   TABLE_NAME: {{ .Values.config.tableName | quote }}
   PORT: {{ .Values.config.port | quote }}
+  DYNAMODB_ENDPOINT: {{ .Values.config.dynamodbEndpoint | quote }}

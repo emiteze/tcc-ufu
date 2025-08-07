@@ -193,6 +193,7 @@ jobs:
           --set image.tag=$VERSION \
           --set config.awsRegion=${{ env.AWS_REGION }} \
           --set config.tableName="Customers-dev" \
+          --set config.dynamodbEndpoint="https://dynamodb.${{ env.AWS_REGION }}.amazonaws.com" \
           --set ingress.annotations."alb\.ingress\.kubernetes\.io/tags"="Environment=dev,Project=tcc-ufu" \
           --wait \
           --timeout=300s
@@ -343,13 +344,11 @@ jobs:
           --set replicaCount=3 \
           --set config.awsRegion=${{ env.AWS_REGION }} \
           --set config.tableName="Customers-prod" \
+          --set config.dynamodbEndpoint="https://dynamodb.${{ env.AWS_REGION }}.amazonaws.com" \
           --set resources.requests.cpu="100m" \
           --set resources.requests.memory="128Mi" \
           --set resources.limits.cpu="500m" \
           --set resources.limits.memory="512Mi" \
-          --set autoscaling.enabled=true \
-          --set autoscaling.minReplicas=3 \
-          --set autoscaling.maxReplicas=10 \
           --set ingress.annotations."alb\.ingress\.kubernetes\.io/tags"="Environment=prod,Project=tcc-ufu" \
           --wait \
           --timeout=600s
@@ -373,7 +372,6 @@ jobs:
         kubectl get pods -n production -l app.kubernetes.io/name=customer-api
         kubectl get svc -n production -l app.kubernetes.io/name=customer-api
         kubectl get ingress -n production
-        kubectl get hpa -n production
 
     - name: Run production smoke tests
       if: steps.deploy.outputs.url != ''

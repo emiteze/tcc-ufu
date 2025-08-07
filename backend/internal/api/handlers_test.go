@@ -222,3 +222,23 @@ func TestCustomerJSONBinding(t *testing.T) {
 		})
 	}
 }
+
+// TestHandler_HealthCheck tests the health check endpoint
+func TestHandler_HealthCheck(t *testing.T) {
+	handler, router := setupTestHandler()
+
+	router.GET("/health", handler.HealthCheck)
+
+	req, _ := http.NewRequest("GET", "/health", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	
+	assert.Equal(t, "ok", response["status"])
+	assert.Equal(t, "customer-api", response["service"])
+}

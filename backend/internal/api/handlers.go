@@ -134,3 +134,11 @@ func (h *Handler) DeleteCustomer(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Customer deleted successfully"})
 }
+
+// HealthCheck handles GET /health
+func (h *Handler) HealthCheck(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"service": "customer-api",
+	})
+}

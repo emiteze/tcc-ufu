@@ -16,7 +16,10 @@ func SetupRouter(dbClient *dynamodb.DynamoDB, cfg *config.Config) *gin.Engine {
 	// Create a handler with the db client and config
 	handler := NewHandler(dbClient, cfg)
 
-	// Routes
+	// Health check endpoint (for Kubernetes liveness probe)
+	router.GET("/health", handler.HealthCheck)
+
+	// Customer API routes
 	router.POST("/customers", handler.CreateCustomer)
 	router.GET("/customers", handler.GetAllCustomers)
 	router.GET("/customers/:id", handler.GetCustomer)

@@ -2,7 +2,7 @@
 replicaCount: 1
 
 image:
-  repository: customer-api
+  repository: "760347630853.dkr.ecr.us-east-1.amazonaws.com/customer-api"
   pullPolicy: IfNotPresent
   tag: "latest"
 
@@ -12,7 +12,7 @@ fullnameOverride: ""
 serviceAccount:
   create: true
   annotations:
-    eks.amazonaws.com/role-arn: "" # Will be set by CI/CD pipeline
+    eks.amazonaws.com/role-arn: "arn:aws:iam::760347630853:role/customer-api-service-role"
   name: "customer-api-service-account"
 
 podAnnotations: {}
@@ -72,14 +72,15 @@ config:
   awsRegion: "us-east-1"
   tableName: "Customers"
   port: "8080"
+  dynamodbEndpoint: "https://dynamodb.us-east-1.amazonaws.com"
 
 # Health checks
 healthCheck:
   enabled: true
-  path: "/customers"
-  initialDelaySeconds: 30
+  path: "/health"
+  initialDelaySeconds: 15
   periodSeconds: 10
-  timeoutSeconds: 5
+  timeoutSeconds: 3
   successThreshold: 1
   failureThreshold: 3
 
