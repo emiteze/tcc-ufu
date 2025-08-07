@@ -15,11 +15,16 @@ import (
 
 // InitDynamoDB initializes a DynamoDB client
 func InitDynamoDB(cfg *config.Config) (*dynamodb.DynamoDB, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Region:   aws.String(cfg.AWSRegion),
-		Endpoint: aws.String(cfg.DynamoDBEndpoint),
-	})
+	awsConfig := &aws.Config{
+		Region: aws.String(cfg.AWSRegion),
+	}
 
+	// Only set endpoint for local development (DynamoDB Local)
+	if cfg.DynamoDBEndpoint != "" && cfg.DynamoDBEndpoint != "https://dynamodb."+cfg.AWSRegion+".amazonaws.com" {
+		awsConfig.Endpoint = aws.String(cfg.DynamoDBEndpoint)
+	}
+
+	sess, err := session.NewSession(awsConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AWS session: %v", err)
 	}
