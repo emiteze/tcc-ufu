@@ -15,7 +15,9 @@ serviceAccount:
     eks.amazonaws.com/role-arn: "arn:aws:iam::760347630853:role/tcc-ufu-dev-pod-role"
   name: "customer-api-service-account"
 
-podAnnotations: {}
+podAnnotations:
+  # Enable Istio sidecar injection
+  sidecar.istio.io/inject: "true"
 
 podSecurityContext: {}
 
@@ -26,26 +28,9 @@ service:
   port: 80
   targetPort: 8080
 
+# Ingress disabled - using Istio Gateway instead
 ingress:
-  enabled: true
-  className: "alb"
-  annotations:
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/healthcheck-path: /customers
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
-    # API should handle /api/* paths, frontend gets root
-    alb.ingress.kubernetes.io/group.name: customer-app
-    alb.ingress.kubernetes.io/group.order: '200'
-  hosts:
-    - host: ""
-      paths:
-        - path: /api
-          pathType: Prefix
-        - path: /customers
-          pathType: Prefix
-  tls: []
+  enabled: false
 
 resources:
   limits:
@@ -74,6 +59,16 @@ config:
   port: "8080"
   dynamodbEndpoint: "https://dynamodb.us-east-1.amazonaws.com"
 
+# Istio configuration
+istio:
+  enabled: true
+  # Destination rule for load balancing
+  destinationRule:
+    enabled: true
+    trafficPolicy:
+      loadBalancer:
+        simple: LEAST_CONN
+
 # Health checks
 healthCheck:
   enabled: true
@@ -86,7 +81,7 @@ healthCheck:
 
 readinessCheck:
   enabled: true
-  path: "/customers"
+  path: "/health"
   initialDelaySeconds: 5
   periodSeconds: 5
   timeoutSeconds: 3

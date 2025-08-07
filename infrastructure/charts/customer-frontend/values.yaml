@@ -14,7 +14,9 @@ serviceAccount:
   annotations: {}
   name: "customer-frontend-service-account"
 
-podAnnotations: {}
+podAnnotations:
+  # Enable Istio sidecar injection
+  sidecar.istio.io/inject: "true"
 
 podSecurityContext: {}
 
@@ -25,24 +27,9 @@ service:
   port: 80
   targetPort: 80
 
+# Ingress disabled - using Istio Gateway instead
 ingress:
-  enabled: true
-  className: "alb"
-  annotations:
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/healthcheck-path: /health
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
-    # Frontend should handle root path, API gets /api/* paths
-    alb.ingress.kubernetes.io/group.name: customer-app
-    alb.ingress.kubernetes.io/group.order: '100'
-  hosts:
-    - host: ""
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
+  enabled: false
 
 resources:
   limits:
@@ -66,8 +53,18 @@ affinity: {}
 
 # Application configuration
 config:
-  # This will be the ALB/API Gateway URL for the backend
-  apiUrl: ""  # Will be set during deployment
+  # Backend API URL within the service mesh
+  apiUrl: "/api"  # Relative path since both apps are behind same gateway
+
+# Istio configuration
+istio:
+  enabled: true
+  # Destination rule for load balancing
+  destinationRule:
+    enabled: true
+    trafficPolicy:
+      loadBalancer:
+        simple: ROUND_ROBIN
 
 # Health checks
 healthCheck:

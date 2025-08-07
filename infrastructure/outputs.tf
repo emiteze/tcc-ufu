@@ -151,3 +151,37 @@ output "istio_verification_commands" {
   istioctl analyze
   EOT
 }
+
+# Istio Gateway Outputs
+output "istio_gateway_service" {
+  description = "Istio Gateway service details"
+  value = {
+    name      = kubernetes_service.istio_ingressgateway.metadata[0].name
+    namespace = kubernetes_service.istio_ingressgateway.metadata[0].namespace
+  }
+}
+
+output "customer_app_url" {
+  description = "Customer application URL (will be available after LoadBalancer provisioning)"
+  value       = "http://[LOAD_BALANCER_DNS]"
+}
+
+output "istio_gateway_verification_commands" {
+  description = "Commands to verify Istio Gateway deployment"
+  value       = <<-EOT
+  # Get Istio Gateway external IP:
+  kubectl get svc -n istio-ingress istio-ingressgateway
+  
+  # Check Gateway status:
+  kubectl get gateway -n istio-ingress
+  kubectl get virtualservice -n istio-ingress
+  
+  # Test the endpoints (replace EXTERNAL-IP with actual LoadBalancer IP):
+  curl http://EXTERNAL-IP/health          # Backend health
+  curl http://EXTERNAL-IP/customers       # Backend API  
+  curl http://EXTERNAL-IP/                # Frontend app
+  
+  # Check Istio proxy status:
+  kubectl get pods -n istio-ingress
+  EOT
+}
