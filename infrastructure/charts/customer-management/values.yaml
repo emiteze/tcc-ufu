@@ -1,0 +1,55 @@
+# Parent chart values for Customer Management System
+global:
+  domain: ""  # Set during deployment
+  environment: "dev"
+
+# Customer API (Backend) Configuration
+customer-api:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: customer-api
+    tag: "latest"
+  
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.name: customer-app
+      alb.ingress.kubernetes.io/group.order: '200'
+    hosts:
+      - host: ""
+        paths:
+          - path: /api
+            pathType: Prefix
+          - path: /customers
+            pathType: Prefix
+  
+  config:
+    awsRegion: "us-east-1"
+    tableName: "Customers"
+    port: "8080"
+
+# Customer Frontend (React App) Configuration  
+customer-frontend:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: customer-frontend
+    tag: "latest"
+  
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.name: customer-app
+      alb.ingress.kubernetes.io/group.order: '100'
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+  
+  config:
+    # This should point to the ALB URL that will be created
+    apiUrl: ""  # Will be set to the ALB endpoint during deployment

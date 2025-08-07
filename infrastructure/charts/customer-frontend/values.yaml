@@ -1,8 +1,8 @@
-# Default values for customer-api
-replicaCount: 1
+# Default values for customer-frontend
+replicaCount: 2
 
 image:
-  repository: customer-api
+  repository: customer-frontend
   pullPolicy: IfNotPresent
   tag: "latest"
 
@@ -11,9 +11,8 @@ fullnameOverride: ""
 
 serviceAccount:
   create: true
-  annotations:
-    eks.amazonaws.com/role-arn: "" # Will be set by CI/CD pipeline
-  name: "customer-api-service-account"
+  annotations: {}
+  name: "customer-frontend-service-account"
 
 podAnnotations: {}
 
@@ -24,7 +23,7 @@ securityContext: {}
 service:
   type: ClusterIP
   port: 80
-  targetPort: 8080
+  targetPort: 80
 
 ingress:
   enabled: true
@@ -33,17 +32,15 @@ ingress:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/healthcheck-path: /customers
+    alb.ingress.kubernetes.io/healthcheck-path: /health
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
-    # API should handle /api/* paths, frontend gets root
+    # Frontend should handle root path, API gets /api/* paths
     alb.ingress.kubernetes.io/group.name: customer-app
-    alb.ingress.kubernetes.io/group.order: '200'
+    alb.ingress.kubernetes.io/group.order: '100'
   hosts:
     - host: ""
       paths:
-        - path: /api
-          pathType: Prefix
-        - path: /customers
+        - path: /
           pathType: Prefix
   tls: []
 
@@ -57,8 +54,8 @@ resources:
 
 autoscaling:
   enabled: false
-  minReplicas: 1
-  maxReplicas: 100
+  minReplicas: 2
+  maxReplicas: 10
   targetCPUUtilizationPercentage: 80
 
 nodeSelector: {}
@@ -69,14 +66,13 @@ affinity: {}
 
 # Application configuration
 config:
-  awsRegion: "us-east-1"
-  tableName: "Customers"
-  port: "8080"
+  # This will be the ALB/API Gateway URL for the backend
+  apiUrl: ""  # Will be set during deployment
 
 # Health checks
 healthCheck:
   enabled: true
-  path: "/customers"
+  path: "/health"
   initialDelaySeconds: 30
   periodSeconds: 10
   timeoutSeconds: 5
@@ -85,7 +81,7 @@ healthCheck:
 
 readinessCheck:
   enabled: true
-  path: "/customers"
+  path: "/health"
   initialDelaySeconds: 5
   periodSeconds: 5
   timeoutSeconds: 3
