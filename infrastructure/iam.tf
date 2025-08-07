@@ -72,7 +72,7 @@ data "aws_iam_policy_document" "pod_assume_role" {
     condition {
       test     = "StringEquals"
       variable = "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub"
-      values   = ["system:serviceaccount:default:customer-api-service-account"]
+      values   = ["system:serviceaccount:development:customer-api-service-account"]
     }
 
     condition {
@@ -91,6 +91,20 @@ resource "aws_iam_role" "pod_role" {
 }
 
 data "aws_iam_policy_document" "dynamodb_policy" {
+  # Table management permissions (require wildcard resource)
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:ListTables",
+      "dynamodb:CreateTable",
+      "dynamodb:DescribeTable",
+      "dynamodb:UpdateTable",
+      "dynamodb:DeleteTable"
+    ]
+    resources = ["*"]
+  }
+
+  # Table data operations (specific table resources)
   statement {
     effect = "Allow"
     actions = [
@@ -101,10 +115,12 @@ data "aws_iam_policy_document" "dynamodb_policy" {
       "dynamodb:Scan",
       "dynamodb:Query",
       "dynamodb:BatchGetItem",
-      "dynamodb:BatchWriteItem",
-      "dynamodb:DescribeTable"
+      "dynamodb:BatchWriteItem"
     ]
-    resources = [aws_dynamodb_table.customers.arn]
+    resources = [
+      aws_dynamodb_table.customers.arn,
+      "arn:aws:dynamodb:${var.aws_region}:${var.account_id}:table/Customers-*"
+    ]
   }
 }
 
