@@ -57,7 +57,7 @@ config:
   awsRegion: "us-east-1"
   tableName: "Customers"
   port: "8080"
-  dynamodbEndpoint: "https://dynamodb.us-east-1.amazonaws.com"
+  dynamodbEndpoint: ""
 
 # Istio configuration
 istio:
