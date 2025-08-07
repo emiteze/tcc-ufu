@@ -1,0 +1,432 @@
+name: Backend CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci-cd.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci-cd.yml'
+
+env:
+  GO_VERSION: '1.21'
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: customer-api
+  BACKEND_HELM_CHART_PATH: infrastructure/charts/customer-api
+  DEV_CLUSTER_NAME: tcc-ufu-dev-cluster
+  PROD_CLUSTER_NAME: tcc-ufu-prod-cluster
+
+jobs:
+  # Job 1: Build and Test
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      should-deploy: ${{ steps.check-deploy.outputs.should-deploy }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Install dependencies
+      run: make deps
+
+    - name: Format code
+      run: make fmt
+
+    - name: Lint code
+      run: make lint
+
+    - name: Run unit tests
+      run: make test-coverage
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: backend/coverage.*
+
+    - name: Generate version
+      id: version
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          VERSION="v$(date +%Y%m%d)-${GITHUB_SHA::7}"
+        else
+          VERSION="v$(date +%Y%m%d)-${GITHUB_SHA::7}-dev"
+        fi
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Generated version: ${VERSION}"
+
+    - name: Check if should deploy
+      id: check-deploy
+      run: |
+        if [[ "${{ github.event_name }}" == "push" ]] && [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == "refs/heads/develop" ]]; then
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+        else
+          echo "should-deploy=false" >> $GITHUB_OUTPUT
+        fi
+
+  # Job 2: Build and Push Docker Image
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: needs.build-and-test.outputs.should-deploy == 'true'
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    outputs:
+      image-uri: ${{ steps.build-image.outputs.image }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.DEV_AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ needs.build-and-test.outputs.version }}
+      run: |
+        # Build Docker image
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+        
+        # Push to ECR
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        
+        # Output image URI
+        IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
+        echo "Pushed image: $IMAGE_URI"
+
+  # Job 3: Deploy to Dev Environment
+  deploy-dev:
+    name: Deploy to Dev Environment
+    runs-on: ubuntu-latest
+    needs: [build-and-test, build-and-push]
+    if: needs.build-and-test.outputs.should-deploy == 'true'
+    environment: development
+    
+    outputs:
+      dev-url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.DEV_AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Install and configure kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: '3.12.0'
+
+    - name: Update kubeconfig for EKS
+      run: |
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.DEV_CLUSTER_NAME }}
+
+    - name: Wait for ECR image to be available
+      run: |
+        echo "Waiting for ECR image to be available..."
+        sleep 30
+
+    - name: Deploy to Dev with Helm
+      id: deploy
+      env:
+        IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
+        VERSION: ${{ needs.build-and-test.outputs.version }}
+      run: |
+        # Helm upgrade/install
+        helm upgrade --install customer-api-dev ${{ env.BACKEND_HELM_CHART_PATH }} \
+          --namespace development \
+          --create-namespace \
+          --set image.repository=$(echo $IMAGE_URI | cut -d':' -f1) \
+          --set image.tag=$VERSION \
+          --set config.awsRegion=${{ env.AWS_REGION }} \
+          --set config.tableName="Customers-dev" \
+          --set ingress.annotations."alb\.ingress\.kubernetes\.io/tags"="Environment=dev,Project=tcc-ufu" \
+          --wait \
+          --timeout=300s
+
+        # Get the ALB URL
+        echo "Waiting for ALB to be provisioned..."
+        sleep 60
+        
+        ALB_URL=$(kubectl get ingress customer-api-dev -n development -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+        if [ -n "$ALB_URL" ]; then
+          DEV_URL="http://$ALB_URL"
+          echo "url=$DEV_URL" >> $GITHUB_OUTPUT
+          echo "Dev deployment URL: $DEV_URL"
+        else
+          echo "ALB URL not available yet"
+          echo "url=" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Verify deployment
+      run: |
+        kubectl get pods -n development -l app.kubernetes.io/name=customer-api
+        kubectl get svc -n development -l app.kubernetes.io/name=customer-api
+        kubectl get ingress -n development
+
+  # Job 4: Run E2E Tests against Dev
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-dev]
+    defaults:
+      run:
+        working-directory: ./integration_test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: integration_test/package-lock.json
+
+    - name: Install dependencies
+      run: make install
+
+    - name: Install Playwright browsers
+      run: make install-browsers
+
+    - name: Wait for dev environment to be ready
+      run: |
+        DEV_URL="${{ needs.deploy-dev.outputs.dev-url }}"
+        if [ -n "$DEV_URL" ]; then
+          echo "Testing dev environment at: $DEV_URL"
+          
+          # Wait for service to be healthy (up to 5 minutes)
+          for i in {1..30}; do
+            if curl -f "$DEV_URL/customers" > /dev/null 2>&1; then
+              echo "Dev environment is ready!"
+              break
+            fi
+            echo "Waiting for dev environment... ($i/30)"
+            sleep 10
+          done
+        else
+          echo "Dev URL not available, using kubectl port-forward"
+        fi
+
+    - name: Run E2E tests against dev environment
+      env:
+        API_URL: ${{ needs.deploy-dev.outputs.dev-url || 'http://localhost:8080' }}
+      run: |
+        if [ -z "${{ needs.deploy-dev.outputs.dev-url }}" ]; then
+          # Port forward if ALB URL not available
+          kubectl port-forward -n development svc/customer-api-dev 8080:80 &
+          PORT_FORWARD_PID=$!
+          sleep 10
+        fi
+        
+        # Run the tests
+        make test || TEST_RESULT=$?
+        
+        # Cleanup port forward if used
+        if [ -n "$PORT_FORWARD_PID" ]; then
+          kill $PORT_FORWARD_PID 2>/dev/null || true
+        fi
+        
+        # Exit with test result
+        exit ${TEST_RESULT:-0}
+
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: e2e-test-results
+        path: |
+          integration_test/playwright-report/
+          integration_test/test-results/
+
+  # Job 5: Deploy to Production
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-test, build-and-push, e2e-tests]
+    if: github.ref == 'refs/heads/main' && needs.build-and-test.outputs.should-deploy == 'true'
+    environment: 
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Install and configure kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: '3.12.0'
+
+    - name: Update kubeconfig for EKS
+      run: |
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.PROD_CLUSTER_NAME }}
+
+    - name: Deploy to Production with Helm
+      id: deploy
+      env:
+        IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
+        VERSION: ${{ needs.build-and-test.outputs.version }}
+      run: |
+        # Helm upgrade/install to production
+        helm upgrade --install customer-api-prod ${{ env.BACKEND_HELM_CHART_PATH }} \
+          --namespace production \
+          --create-namespace \
+          --set image.repository=$(echo $IMAGE_URI | cut -d':' -f1) \
+          --set image.tag=$VERSION \
+          --set replicaCount=3 \
+          --set config.awsRegion=${{ env.AWS_REGION }} \
+          --set config.tableName="Customers-prod" \
+          --set resources.requests.cpu="100m" \
+          --set resources.requests.memory="128Mi" \
+          --set resources.limits.cpu="500m" \
+          --set resources.limits.memory="512Mi" \
+          --set autoscaling.enabled=true \
+          --set autoscaling.minReplicas=3 \
+          --set autoscaling.maxReplicas=10 \
+          --set ingress.annotations."alb\.ingress\.kubernetes\.io/tags"="Environment=prod,Project=tcc-ufu" \
+          --wait \
+          --timeout=600s
+
+        # Get the production ALB URL
+        echo "Waiting for production ALB to be ready..."
+        sleep 60
+        
+        ALB_URL=$(kubectl get ingress customer-api-prod -n production -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+        if [ -n "$ALB_URL" ]; then
+          PROD_URL="https://$ALB_URL"
+          echo "url=$PROD_URL" >> $GITHUB_OUTPUT
+          echo "Production deployment URL: $PROD_URL"
+        else
+          echo "Production ALB URL not available yet"
+          echo "url=" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Verify production deployment
+      run: |
+        kubectl get pods -n production -l app.kubernetes.io/name=customer-api
+        kubectl get svc -n production -l app.kubernetes.io/name=customer-api
+        kubectl get ingress -n production
+        kubectl get hpa -n production
+
+    - name: Run production smoke tests
+      if: steps.deploy.outputs.url != ''
+      run: |
+        PROD_URL="${{ steps.deploy.outputs.url }}"
+        echo "Running smoke tests against: $PROD_URL"
+        
+        # Basic health check
+        for i in {1..10}; do
+          if curl -f "$PROD_URL/customers" > /dev/null 2>&1; then
+            echo "✅ Production health check passed"
+            break
+          fi
+          echo "Waiting for production to be healthy... ($i/10)"
+          sleep 30
+        done
+
+  # Job 6: Notify and Clean up
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [build-and-test, build-and-push, deploy-dev, e2e-tests, deploy-prod]
+    if: always() && needs.build-and-test.outputs.should-deploy == 'true'
+    
+    steps:
+    - name: Determine deployment status
+      id: status
+      run: |
+        if [[ "${{ needs.e2e-tests.result }}" == "failure" ]]; then
+          echo "status=❌ E2E Tests Failed" >> $GITHUB_OUTPUT
+          echo "color=danger" >> $GITHUB_OUTPUT
+        elif [[ "${{ needs.deploy-prod.result }}" == "success" ]]; then
+          echo "status=✅ Deployed to Production" >> $GITHUB_OUTPUT
+          echo "color=success" >> $GITHUB_OUTPUT
+        elif [[ "${{ needs.deploy-dev.result }}" == "success" ]]; then
+          echo "status=🚀 Deployed to Development" >> $GITHUB_OUTPUT
+          echo "color=warning" >> $GITHUB_OUTPUT
+        else
+          echo "status=❌ Deployment Failed" >> $GITHUB_OUTPUT
+          echo "color=danger" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create deployment summary
+      run: |
+        echo "## 🚀 Backend Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ${{ steps.status.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** ${{ needs.build-and-test.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Results" >> $GITHUB_STEP_SUMMARY
+        echo "- Build & Test: ${{ needs.build-and-test.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Docker Build: ${{ needs.build-and-push.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Dev Deploy: ${{ needs.deploy-dev.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- E2E Tests: ${{ needs.e2e-tests.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Prod Deploy: ${{ needs.deploy-prod.result == 'success' && '✅' || (needs.deploy-prod.result == 'skipped' && '⏭️') || '❌' }}" >> $GITHUB_STEP_SUMMARY
