@@ -15,8 +15,7 @@ serviceAccount:
   name: "customer-frontend-service-account"
 
 podAnnotations:
-  # Enable Istio sidecar injection
-  sidecar.istio.io/inject: "true"
+  # Ambient mode - no sidecar injection needed
 
 podSecurityContext: {}
 

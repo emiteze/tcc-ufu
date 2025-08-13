@@ -53,3 +53,14 @@ customer-frontend:
   config:
     # This should point to the ALB URL that will be created
     apiUrl: ""  # Will be set to the ALB endpoint during deployment
+
+# Istio VirtualService configuration
+virtualService:
+  enabled: true
+  gateway: "customer-api-dev-gateway"
+  backend:
+    host: "customer-api-dev.development.svc.cluster.local"
+    port: 80
+  frontend:
+    host: "customer-frontend-dev.development.svc.cluster.local"
+    port: 80

@@ -16,8 +16,7 @@ serviceAccount:
   name: "customer-api-service-account"
 
 podAnnotations:
-  # Enable Istio sidecar injection
-  sidecar.istio.io/inject: "true"
+  # Ambient mode - no sidecar injection needed
 
 podSecurityContext: {}
 
@@ -51,6 +50,12 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# Istio Gateway configuration
+gateway:
+  tls:
+    enabled: false
+    secretName: ""
 
 # Application configuration
 config:

@@ -1,0 +1,37 @@
+{{- if .Values.virtualService.enabled }}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "customer-management.fullname" . }}-vs
+  namespace: istio-ingress
+  labels:
+    {{- include "customer-management.labels" . | nindent 4 }}
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - {{ .Values.virtualService.gateway }}
+  http:
+  # Backend API routes
+  - match:
+    - uri:
+        prefix: "/api"
+    - uri:
+        prefix: "/customers"
+    - uri:
+        exact: "/health"
+    route:
+    - destination:
+        host: {{ .Values.virtualService.backend.host }}
+        port:
+          number: {{ .Values.virtualService.backend.port }}
+  # Frontend routes (catch-all)
+  - match:
+    - uri:
+        prefix: "/"
+    route:
+    - destination:
+        host: {{ .Values.virtualService.frontend.host }}
+        port:
+          number: {{ .Values.virtualService.frontend.port }}
+{{- end }}
