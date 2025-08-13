@@ -12,10 +12,19 @@ spec:
   gateways:
   - {{ .Values.virtualService.gateway }}
   http:
-  # Backend API routes
+  # Backend API routes with path rewriting
   - match:
     - uri:
         prefix: "/api"
+    rewrite:
+      uri: "/"
+    route:
+    - destination:
+        host: {{ .Values.virtualService.backend.host }}
+        port:
+          number: {{ .Values.virtualService.backend.port }}
+  # Direct backend routes (for backward compatibility)
+  - match:
     - uri:
         prefix: "/customers"
     - uri:
