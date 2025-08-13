@@ -57,6 +57,17 @@ gateway:
     enabled: false
     secretName: ""
 
+# Istio VirtualService configuration
+virtualService:
+  enabled: true
+  gateway: "customer-api-dev-gateway"
+  backend:
+    host: "customer-api-dev.development.svc.cluster.local"
+    port: 80
+  frontend:
+    host: "customer-frontend-dev.development.svc.cluster.local"
+    port: 80
+
 # Application configuration
 config:
   awsRegion: "us-east-1"

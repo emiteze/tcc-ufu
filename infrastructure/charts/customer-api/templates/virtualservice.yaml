@@ -2,10 +2,10 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: {{ include "customer-management.fullname" . }}-vs
+  name: {{ include "customer-api.fullname" . }}-vs
   namespace: istio-ingress
   labels:
-    {{- include "customer-management.labels" . | nindent 4 }}
+    {{- include "customer-api.labels" . | nindent 4 }}
 spec:
   hosts:
   - "*"
