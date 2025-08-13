@@ -22,7 +22,7 @@ resource "kubernetes_deployment" "istio_ingress_gateway" {
   }
 
   spec {
-    replicas = 2
+    replicas = 1
 
     selector {
       match_labels = {
@@ -389,105 +389,5 @@ resource "kubernetes_service" "istio_ingressgateway" {
   depends_on = [kubernetes_deployment.istio_ingress_gateway]
 }
 
-# Customer API Gateway
-resource "kubernetes_manifest" "customer_app_gateway" {
-  manifest = {
-    apiVersion = "networking.istio.io/v1beta1"
-    kind       = "Gateway"
-    
-    metadata = {
-      name      = "customer-app-gateway"
-      namespace = "istio-ingress"
-    }
-    
-    spec = {
-      selector = {
-        istio = "ingressgateway"
-      }
-      
-      servers = [
-        {
-          port = {
-            number   = 80
-            name     = "http"
-            protocol = "HTTP"
-          }
-          hosts = ["*"]
-        }
-      ]
-    }
-  }
-
-  depends_on = [kubernetes_deployment.istio_ingress_gateway]
-}
-
-# Virtual Service for routing
-resource "kubernetes_manifest" "customer_app_virtualservice" {
-  manifest = {
-    apiVersion = "networking.istio.io/v1beta1"
-    kind       = "VirtualService"
-    
-    metadata = {
-      name      = "customer-app-vs"
-      namespace = "istio-ingress"
-    }
-    
-    spec = {
-      hosts = ["*"]
-      gateways = ["customer-app-gateway"]
-      
-      http = [
-        {
-          match = [
-            {
-              uri = {
-                prefix = "/api"
-              }
-            },
-            {
-              uri = {
-                prefix = "/customers"
-              }
-            },
-            {
-              uri = {
-                exact = "/health"
-              }
-            }
-          ]
-          route = [
-            {
-              destination = {
-                host = "customer-api-dev.development.svc.cluster.local"
-                port = {
-                  number = 80
-                }
-              }
-            }
-          ]
-        },
-        {
-          match = [
-            {
-              uri = {
-                prefix = "/"
-              }
-            }
-          ]
-          route = [
-            {
-              destination = {
-                host = "customer-frontend-dev.development.svc.cluster.local"
-                port = {
-                  number = 80
-                }
-              }
-            }
-          ]
-        }
-      ]
-    }
-  }
-
-  depends_on = [kubernetes_manifest.customer_app_gateway]
-}
+# Note: Customer Gateway and VirtualService resources have been moved to istio-post-cluster.tf
+# This avoids the chicken-and-egg problem where Kubernetes manifests are evaluated before the cluster exists
