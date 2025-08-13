@@ -185,10 +185,14 @@ jobs:
         IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
         VERSION: ${{ needs.build-and-test.outputs.version }}
       run: |
+        # Create namespace with Istio Ambient Mode label
+        kubectl create namespace development --dry-run=client -o yaml | \
+          kubectl label --local -f - istio.io/dataplane-mode=ambient -o yaml | \
+          kubectl apply -f -
+        
         # Helm upgrade/install
         helm upgrade --install customer-api-dev ${{ env.BACKEND_HELM_CHART_PATH }} \
           --namespace development \
-          --create-namespace \
           --set image.repository=$(echo $IMAGE_URI | cut -d':' -f1) \
           --set image.tag=$VERSION \
           --set config.awsRegion=${{ env.AWS_REGION }} \
@@ -333,10 +337,14 @@ jobs:
         IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
         VERSION: ${{ needs.build-and-test.outputs.version }}
       run: |
+        # Create namespace with Istio Ambient Mode label
+        kubectl create namespace production --dry-run=client -o yaml | \
+          kubectl label --local -f - istio.io/dataplane-mode=ambient -o yaml | \
+          kubectl apply -f -
+        
         # Helm upgrade/install to production
         helm upgrade --install customer-api-prod ${{ env.BACKEND_HELM_CHART_PATH }} \
           --namespace production \
-          --create-namespace \
           --set image.repository=$(echo $IMAGE_URI | cut -d':' -f1) \
           --set image.tag=$VERSION \
           --set replicaCount=3 \

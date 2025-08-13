@@ -2,6 +2,10 @@
 # Stage 1: Build the application
 FROM node:18-alpine as builder
 
+# Accept API URL as build argument
+ARG REACT_APP_API_URL="/api"
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+
 # Set working directory
 WORKDIR /app
 

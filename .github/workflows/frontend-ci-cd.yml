@@ -116,9 +116,13 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: ${{ needs.build-and-test.outputs.version }}
       run: |
-        # Build Docker image
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+        # Build Docker image with API URL
+        docker build \
+          --build-arg REACT_APP_API_URL="/api" \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker build \
+          --build-arg REACT_APP_API_URL="/api" \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
         
         # Push to ECR
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
@@ -171,13 +175,16 @@ jobs:
         IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
         VERSION: ${{ needs.build-and-test.outputs.version }}
       run: |
+        # Create namespace with Istio Ambient Mode label
+        kubectl create namespace development --dry-run=client -o yaml | \
+          kubectl label --local -f - istio.io/dataplane-mode=ambient -o yaml | \
+          kubectl apply -f -
+        
         # Helm upgrade/install
         helm upgrade --install customer-frontend-dev ${{ env.FRONTEND_HELM_CHART_PATH }} \
           --namespace development \
-          --create-namespace \
           --set image.repository=$(echo $IMAGE_URI | cut -d':' -f1) \
           --set image.tag=$VERSION \
-          --set config.apiUrl="/api" \
           --wait \
           --timeout=300s
 
@@ -334,14 +341,17 @@ jobs:
         IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
         VERSION: ${{ needs.build-and-test.outputs.version }}
       run: |
+        # Create namespace with Istio Ambient Mode label
+        kubectl create namespace production --dry-run=client -o yaml | \
+          kubectl label --local -f - istio.io/dataplane-mode=ambient -o yaml | \
+          kubectl apply -f -
+        
         # Helm upgrade/install to production
         helm upgrade --install customer-frontend-prod ${{ env.FRONTEND_HELM_CHART_PATH }} \
           --namespace production \
-          --create-namespace \
           --set image.repository=$(echo $IMAGE_URI | cut -d':' -f1) \
           --set image.tag=$VERSION \
           --set replicaCount=3 \
-          --set config.apiUrl="/api" \
           --set resources.requests.cpu="50m" \
           --set resources.requests.memory="64Mi" \
           --set resources.limits.cpu="200m" \
