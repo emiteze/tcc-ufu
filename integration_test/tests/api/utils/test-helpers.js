@@ -7,6 +7,13 @@ const { expect } = require('@playwright/test');
 class TestHelpers {
   
   /**
+   * Get the API base URL from environment or config
+   */
+  static getApiBaseUrl() {
+    return process.env.API_BASE_URL || 'http://localhost:8080';
+  }
+  
+  /**
    * Generate a random customer for testing
    */
   static generateRandomCustomer() {

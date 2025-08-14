@@ -8,7 +8,7 @@ test.describe('GET /customers - Get All Customers', () => {
 
   test.beforeAll(async ({ playwright }) => {
     request = await playwright.request.newContext({
-      baseURL: 'http://localhost:8080'
+      baseURL: TestHelpers.getApiBaseUrl()
     });
   });
 
