@@ -267,17 +267,20 @@ jobs:
 
     - name: Run E2E tests against dev environment
       env:
-        API_URL: ${{ needs.deploy-dev.outputs.dev-url || 'http://localhost:8080' }}
+        API_BASE_URL: ${{ needs.deploy-dev.outputs.dev-url || 'http://localhost:8080' }}
+        FRONTEND_BASE_URL: ${{ needs.deploy-dev.outputs.dev-url || 'http://localhost:3000' }}
+        CI: true
       run: |
         if [ -z "${{ needs.deploy-dev.outputs.dev-url }}" ]; then
           # Port forward if Gateway URL not available
           kubectl port-forward -n istio-ingress svc/istio-ingressgateway 8080:80 &
           PORT_FORWARD_PID=$!
           sleep 10
+          export API_BASE_URL="http://localhost:8080"
         fi
         
-        # Run the tests
-        make test || TEST_RESULT=$?
+        # Run the API tests (no prereq checks in CI)
+        make test-api-ci || TEST_RESULT=$?
         
         # Cleanup port forward if used
         if [ -n "$PORT_FORWARD_PID" ]; then

@@ -257,7 +257,7 @@ jobs:
           
           # Wait for service to be healthy (up to 5 minutes)
           for i in {1..30}; do
-            if curl -f "$DEV_URL/health" > /dev/null 2>&1; then
+            if curl -f "$DEV_URL/" > /dev/null 2>&1; then
               echo "Dev environment is ready!"
               break
             fi
@@ -270,18 +270,20 @@ jobs:
 
     - name: Run E2E tests against dev environment
       env:
-        BASE_URL: ${{ needs.deploy-dev.outputs.dev-url || 'http://localhost:3000' }}
-        API_URL: ${{ needs.deploy-dev.outputs.dev-url || 'http://localhost:8080' }}
+        FRONTEND_BASE_URL: ${{ needs.deploy-dev.outputs.dev-url || 'http://localhost:3000' }}
+        API_BASE_URL: ${{ needs.deploy-dev.outputs.dev-url || 'http://localhost:8080' }}
+        CI: true
       run: |
         if [ -z "${{ needs.deploy-dev.outputs.dev-url }}" ]; then
           # Port forward if Gateway URL not available
           kubectl port-forward -n istio-ingress svc/istio-ingressgateway 3000:80 &
           PORT_FORWARD_PID=$!
           sleep 10
+          export FRONTEND_BASE_URL="http://localhost:3000"
         fi
         
-        # Run the tests
-        make test || TEST_RESULT=$?
+        # Run the frontend tests (no prereq checks in CI)
+        make test-frontend-ci || TEST_RESULT=$?
         
         # Cleanup port forward if used
         if [ -n "$PORT_FORWARD_PID" ]; then

@@ -35,21 +35,21 @@ setup: install install-browsers
 .PHONY: check-backend
 check-backend:
 	@echo "Checking if backend API is available at $(API_URL)..."
-	@curl -s $(API_URL)/customers >/dev/null || (echo "❌ Backend API not available at $(API_URL)" && echo "Please start the backend service first" && exit 1)
+	@curl -f -s --max-time 10 $(API_URL)/customers >/dev/null || (echo "❌ Backend API not available at $(API_URL)" && echo "Please start the backend service first" && exit 1)
 	@echo "✅ Backend API is available"
 
 # Check if frontend is running
 .PHONY: check-frontend
 check-frontend:
 	@echo "Checking if frontend is available at $(FRONTEND_URL)..."
-	@curl -s $(FRONTEND_URL) >/dev/null || (echo "❌ Frontend not available at $(FRONTEND_URL)" && echo "Please start the frontend service first" && exit 1)
+	@curl -f -s --max-time 10 $(FRONTEND_URL) >/dev/null || (echo "❌ Frontend not available at $(FRONTEND_URL)" && echo "Please start the frontend service first" && exit 1)
 	@echo "✅ Frontend is available"
 
 # Check if DynamoDB is running
 .PHONY: check-dynamodb
 check-dynamodb:
 	@echo "Checking if DynamoDB is available at $(DYNAMODB_URL)..."
-	@curl -s $(DYNAMODB_URL) >/dev/null || (echo "⚠️ DynamoDB not available at $(DYNAMODB_URL)" && echo "This might cause test failures if backend expects local DynamoDB")
+	@curl -f -s --max-time 10 $(DYNAMODB_URL) >/dev/null || (echo "⚠️ DynamoDB not available at $(DYNAMODB_URL)" && echo "This might cause test failures if backend expects local DynamoDB")
 	@echo "✅ DynamoDB is available"
 
 # Check all prerequisites for API tests
@@ -74,6 +74,13 @@ test: check-all-prereqs
 	@npm test
 	@echo "All integration tests complete"
 
+# Run all tests without prereq checks (for CI)
+.PHONY: test-ci
+test-ci:
+	@echo "Running all integration tests (CI mode)..."
+	@npm test
+	@echo "All integration tests complete"
+
 # Run only API tests
 .PHONY: test-api
 test-api: check-prereqs
@@ -81,10 +88,24 @@ test-api: check-prereqs
 	@npx playwright test --project="API Tests"
 	@echo "API integration tests complete"
 
+# Run only API tests without prereq checks (for CI)
+.PHONY: test-api-ci
+test-api-ci:
+	@echo "Running API integration tests (CI mode)..."
+	@npx playwright test --project="API Tests"
+	@echo "API integration tests complete"
+
 # Run only frontend tests
 .PHONY: test-frontend
 test-frontend: check-frontend-prereqs
 	@echo "Running frontend integration tests..."
+	@npx playwright test --project="Frontend Chrome"
+	@echo "Frontend integration tests complete"
+
+# Run only frontend tests without prereq checks (for CI)
+.PHONY: test-frontend-ci
+test-frontend-ci:
+	@echo "Running frontend integration tests (CI mode)..."
 	@npx playwright test --project="Frontend Chrome"
 	@echo "Frontend integration tests complete"
 
@@ -307,6 +328,7 @@ help:
 	@echo ""
 	@echo "Test Commands (All):"
 	@echo "  test               - Run all integration tests (API + Frontend)"
+	@echo "  test-ci            - Run all tests without prereq checks (for CI)"
 	@echo "  test-verbose       - Run all tests with verbose output"
 	@echo "  test-headed        - Run all tests in headed mode"
 	@echo "  test-debug         - Run all tests in debug mode"
@@ -314,9 +336,11 @@ help:
 	@echo ""
 	@echo "Test Commands (API Only):"
 	@echo "  test-api           - Run only API integration tests"
+	@echo "  test-api-ci        - Run API tests without prereq checks (for CI)"
 	@echo ""
 	@echo "Test Commands (Frontend Only):"
 	@echo "  test-frontend      - Run frontend tests (Chrome only)"
+	@echo "  test-frontend-ci   - Run frontend tests without prereq checks (for CI)"
 	@echo "  test-frontend-all  - Run frontend tests on all browsers"
 	@echo "  test-frontend-headed - Run frontend tests in headed mode"
 	@echo "  test-frontend-debug  - Run frontend tests in debug mode"
