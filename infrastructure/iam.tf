@@ -72,7 +72,10 @@ data "aws_iam_policy_document" "pod_assume_role" {
     condition {
       test     = "StringEquals"
       variable = "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub"
-      values   = ["system:serviceaccount:development:customer-api-service-account"]
+      values   = [
+        "system:serviceaccount:development:customer-api-service-account",
+        "system:serviceaccount:production:customer-api-service-account"
+      ]
     }
 
     condition {

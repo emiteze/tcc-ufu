@@ -2,7 +2,7 @@
 replicaCount: 1
 
 image:
-  repository: customer-frontend
+  repository: ""  # This will be set during deployment via --set
   pullPolicy: IfNotPresent
   tag: "latest"
 

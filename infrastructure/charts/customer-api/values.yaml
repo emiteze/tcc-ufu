@@ -2,7 +2,7 @@
 replicaCount: 1
 
 image:
-  repository: "760347630853.dkr.ecr.us-east-1.amazonaws.com/customer-api"
+  repository: ""  # This will be set during deployment via --set
   pullPolicy: IfNotPresent
   tag: "latest"
 
@@ -12,7 +12,7 @@ fullnameOverride: ""
 serviceAccount:
   create: true
   annotations:
-    eks.amazonaws.com/role-arn: "arn:aws:iam::760347630853:role/tcc-ufu-dev-pod-role"
+    eks.amazonaws.com/role-arn: ""  # This will be set during deployment via --set
   name: "customer-api-service-account"
 
 podAnnotations:

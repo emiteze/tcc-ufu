@@ -196,6 +196,7 @@ jobs:
           --namespace development \
           --set image.repository=$(echo $IMAGE_URI | cut -d':' -f1) \
           --set image.tag=$VERSION \
+          --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="arn:aws:iam::760347630853:role/tcc-ufu-dev-pod-role" \
           --set config.awsRegion=${{ env.AWS_REGION }} \
           --set config.tableName="Customers-dev" \
           --set config.dynamodbEndpoint="https://dynamodb.${{ env.AWS_REGION }}.amazonaws.com" \
@@ -412,6 +413,7 @@ jobs:
           --namespace production \
           --set image.repository=$(echo $IMAGE_URI | cut -d':' -f1) \
           --set image.tag=$VERSION \
+          --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="arn:aws:iam::131204617414:role/tcc-ufu-prod-pod-role" \
           --set replicaCount=3 \
           --set config.awsRegion=${{ env.AWS_REGION }} \
           --set config.tableName="Customers-prod" \
