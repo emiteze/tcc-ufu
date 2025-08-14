@@ -21,7 +21,7 @@ module "eks" {
 
   eks_managed_node_groups = {
     main = {
-      name = "${local.name}-node-group"
+      name = "${local.name}-ng"
 
       instance_types = ["t3.medium"]
 

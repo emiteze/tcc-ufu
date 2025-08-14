@@ -21,9 +21,8 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "terraform-state-tcc-ufu"
-    region = "us-east-1"
-    key    = "terraform.tfstate"
+    # Configuration provided via -backend-config flag
+    # Use: terraform init -backend-config=backend-dev.hcl or backend-prod.hcl
   }
 }
 
