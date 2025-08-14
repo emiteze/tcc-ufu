@@ -2,6 +2,7 @@
 
 # Variables
 API_URL=http://localhost:8080
+FRONTEND_URL=http://localhost:3000
 DYNAMODB_URL=http://localhost:8000
 NODE_MODULES=node_modules
 TEST_RESULTS=test-results
@@ -37,6 +38,13 @@ check-backend:
 	@curl -s $(API_URL)/customers >/dev/null || (echo "❌ Backend API not available at $(API_URL)" && echo "Please start the backend service first" && exit 1)
 	@echo "✅ Backend API is available"
 
+# Check if frontend is running
+.PHONY: check-frontend
+check-frontend:
+	@echo "Checking if frontend is available at $(FRONTEND_URL)..."
+	@curl -s $(FRONTEND_URL) >/dev/null || (echo "❌ Frontend not available at $(FRONTEND_URL)" && echo "Please start the frontend service first" && exit 1)
+	@echo "✅ Frontend is available"
+
 # Check if DynamoDB is running
 .PHONY: check-dynamodb
 check-dynamodb:
@@ -44,41 +52,91 @@ check-dynamodb:
 	@curl -s $(DYNAMODB_URL) >/dev/null || (echo "⚠️ DynamoDB not available at $(DYNAMODB_URL)" && echo "This might cause test failures if backend expects local DynamoDB")
 	@echo "✅ DynamoDB is available"
 
-# Check all prerequisites
+# Check all prerequisites for API tests
 .PHONY: check-prereqs
 check-prereqs: check-backend check-dynamodb
-	@echo "✅ All prerequisites are met"
+	@echo "✅ All prerequisites are met for API tests"
 
-# Run all tests (assumes backend is running)
+# Check all prerequisites for frontend tests
+.PHONY: check-frontend-prereqs
+check-frontend-prereqs: check-frontend
+	@echo "✅ All prerequisites are met for frontend tests"
+
+# Check all prerequisites for all tests
+.PHONY: check-all-prereqs
+check-all-prereqs: check-backend check-frontend check-dynamodb
+	@echo "✅ All prerequisites are met for all tests"
+
+# Run all tests (both API and frontend)
 .PHONY: test
-test: check-prereqs
-	@echo "Running integration tests..."
+test: check-all-prereqs
+	@echo "Running all integration tests..."
 	@npm test
-	@echo "Integration tests complete"
+	@echo "All integration tests complete"
+
+# Run only API tests
+.PHONY: test-api
+test-api: check-prereqs
+	@echo "Running API integration tests..."
+	@npx playwright test --project="API Tests"
+	@echo "API integration tests complete"
+
+# Run only frontend tests
+.PHONY: test-frontend
+test-frontend: check-frontend-prereqs
+	@echo "Running frontend integration tests..."
+	@npx playwright test --project="Frontend Chrome"
+	@echo "Frontend integration tests complete"
+
+# Run frontend tests on all browsers
+.PHONY: test-frontend-all
+test-frontend-all: check-frontend-prereqs
+	@echo "Running frontend tests on all browsers..."
+	@npx playwright test tests/frontend/
+	@echo "Frontend tests on all browsers complete"
 
 # Run tests with verbose output
 .PHONY: test-verbose
-test-verbose: check-prereqs
-	@echo "Running integration tests (verbose)..."
+test-verbose: check-all-prereqs
+	@echo "Running all integration tests (verbose)..."
 	@npx playwright test --reporter=list
 	@echo "Verbose integration tests complete"
 
-# Run tests in headed mode (with browser UI)
+# Run frontend tests in headed mode (with browser UI)
+.PHONY: test-frontend-headed
+test-frontend-headed: check-frontend-prereqs
+	@echo "Running frontend tests in headed mode..."
+	@npx playwright test tests/frontend/ --headed
+	@echo "Headed frontend tests complete"
+
+# Run frontend tests in debug mode
+.PHONY: test-frontend-debug
+test-frontend-debug: check-frontend-prereqs
+	@echo "Running frontend tests in debug mode..."
+	@npx playwright test tests/frontend/ --debug
+
+# Run frontend tests with UI mode
+.PHONY: test-frontend-ui
+test-frontend-ui: check-frontend-prereqs
+	@echo "Running frontend tests with UI..."
+	@npx playwright test tests/frontend/ --ui
+
+# Run tests in headed mode (with browser UI) - legacy
 .PHONY: test-headed
-test-headed: check-prereqs
+test-headed: check-all-prereqs
 	@echo "Running integration tests in headed mode..."
 	@npm run test:headed
 	@echo "Headed integration tests complete"
 
-# Run tests in debug mode
+# Run tests in debug mode - legacy
 .PHONY: test-debug
-test-debug: check-prereqs
+test-debug: check-all-prereqs
 	@echo "Running integration tests in debug mode..."
 	@npm run test:debug
 
-# Run tests with UI mode
+# Run tests with UI mode - legacy
 .PHONY: test-ui
-test-ui: check-prereqs
+test-ui: check-all-prereqs
 	@echo "Running integration tests with UI..."
 	@npm run test:ui
 
@@ -219,13 +277,17 @@ info:
 	@echo "Integration Test Configuration:"
 	@echo "==============================="
 	@echo "API URL: $(API_URL)"
+	@echo "Frontend URL: $(FRONTEND_URL)"
 	@echo "DynamoDB URL: $(DYNAMODB_URL)"
 	@echo "Node modules: $(NODE_MODULES)"
 	@echo "Test results: $(TEST_RESULTS)"
 	@echo "Report directory: $(PLAYWRIGHT_REPORT)"
 	@echo ""
-	@echo "Available test files:"
-	@find tests -name '*.test.js' -exec basename {} \; | sort
+	@echo "Available API test files:"
+	@find tests/api -name '*.test.js' -exec basename {} \; 2>/dev/null | sort || echo "No API tests found"
+	@echo ""
+	@echo "Available Frontend test files:"
+	@find tests/frontend -name '*.test.js' -exec basename {} \; 2>/dev/null | sort || echo "No frontend tests found"
 
 # Help target
 .PHONY: help
@@ -234,30 +296,48 @@ help:
 	@echo "=================================="
 	@echo ""
 	@echo "Prerequisites:"
-	@echo "  - Backend API running at $(API_URL)"
-	@echo "  - DynamoDB Local at $(DYNAMODB_URL) (recommended)"
+	@echo "  - Backend API running at $(API_URL) (for API tests)"
+	@echo "  - Frontend app running at $(FRONTEND_URL) (for frontend tests)"
+	@echo "  - DynamoDB Local at $(DYNAMODB_URL) (recommended for API tests)"
 	@echo ""
 	@echo "Setup Commands:"
 	@echo "  setup              - Complete setup (install + browsers)"
 	@echo "  install            - Install Node.js dependencies"
 	@echo "  install-browsers   - Install Playwright browsers"
 	@echo ""
-	@echo "Test Commands:"
-	@echo "  test               - Run all integration tests"
-	@echo "  test-verbose       - Run tests with verbose output"
-	@echo "  test-headed        - Run tests in headed mode (with browser UI)"
-	@echo "  test-debug         - Run tests in debug mode"
-	@echo "  test-ui            - Run tests with Playwright UI"
+	@echo "Test Commands (All):"
+	@echo "  test               - Run all integration tests (API + Frontend)"
+	@echo "  test-verbose       - Run all tests with verbose output"
+	@echo "  test-headed        - Run all tests in headed mode"
+	@echo "  test-debug         - Run all tests in debug mode"
+	@echo "  test-ui            - Run all tests with Playwright UI"
+	@echo ""
+	@echo "Test Commands (API Only):"
+	@echo "  test-api           - Run only API integration tests"
+	@echo ""
+	@echo "Test Commands (Frontend Only):"
+	@echo "  test-frontend      - Run frontend tests (Chrome only)"
+	@echo "  test-frontend-all  - Run frontend tests on all browsers"
+	@echo "  test-frontend-headed - Run frontend tests in headed mode"
+	@echo "  test-frontend-debug  - Run frontend tests in debug mode"
+	@echo "  test-frontend-ui     - Run frontend tests with Playwright UI"
+	@echo ""
+	@echo "Utility Commands:"
 	@echo "  test-file FILE=x   - Run specific test file"
 	@echo "  test-grep PATTERN=x- Run tests matching pattern"
 	@echo "  test-coverage      - Run tests with coverage"
 	@echo "  smoke-test         - Run basic health check tests"
 	@echo "  performance-test   - Run performance and stress tests"
 	@echo ""
-	@echo "Utility Commands:"
-	@echo "  check-prereqs      - Check if backend services are running"
+	@echo "Prerequisite Checks:"
+	@echo "  check-all-prereqs  - Check all services (API + Frontend + DB)"
+	@echo "  check-prereqs      - Check API services (API + DB)"
+	@echo "  check-frontend-prereqs - Check frontend services"
 	@echo "  check-backend      - Check if backend API is available"
+	@echo "  check-frontend     - Check if frontend is available"
 	@echo "  check-dynamodb     - Check if DynamoDB is available"
+	@echo ""
+	@echo "Other Commands:"
 	@echo "  report             - Generate and show test report"
 	@echo "  show-report        - Show last test report"
 	@echo "  clean              - Clean test artifacts"
@@ -265,8 +345,6 @@ help:
 	@echo "  validate           - Validate test environment"
 	@echo "  stats              - Show test statistics"
 	@echo "  info               - Show configuration information"
-	@echo ""
-	@echo "Development Commands:"
 	@echo "  lint               - Lint test files (if configured)"
 	@echo "  format             - Format test files (if configured)"
 	@echo "  watch              - Run tests in watch mode"
@@ -274,6 +352,8 @@ help:
 	@echo "Examples:"
 	@echo "  make setup                                    # Initial setup"
 	@echo "  make test                                     # Run all tests"
-	@echo "  make test-file FILE=create-customer.test.js  # Run specific test"
+	@echo "  make test-api                                 # Run only API tests"
+	@echo "  make test-frontend                            # Run only frontend tests"
+	@echo "  make test-frontend-headed                     # Debug frontend with browser"
+	@echo "  make test-file FILE=customer-form.test.js    # Run specific test"
 	@echo "  make test-grep PATTERN='should create'       # Run matching tests"
-	@echo "  make test-headed                              # Debug with browser"

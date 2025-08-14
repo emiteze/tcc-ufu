@@ -1,7 +1,7 @@
 {
   "name": "tcc-ufu-integration-tests",
   "version": "1.0.0",
-  "description": "Integration tests for TCC-UFU Customer API using Playwright",
+  "description": "Integration tests for TCC-UFU Customer Management System (API + Frontend) using Playwright",
   "main": "index.js",
   "scripts": {
     "test": "playwright test",
@@ -9,13 +9,21 @@
     "test:debug": "playwright test --debug",
     "test:report": "playwright show-report",
     "test:ui": "playwright test --ui",
+    "test:api": "playwright test --project=\"API Tests\"",
+    "test:frontend": "playwright test --project=\"Frontend Chrome\"",
+    "test:frontend:all": "playwright test tests/frontend/",
+    "test:frontend:headed": "playwright test tests/frontend/ --headed",
+    "test:frontend:debug": "playwright test tests/frontend/ --debug",
+    "test:frontend:ui": "playwright test tests/frontend/ --ui",
     "install:browsers": "playwright install"
   },
   "keywords": [
     "playwright",
     "api-testing",
+    "frontend-testing",
     "integration-tests",
-    "customer-api"
+    "customer-api",
+    "ui-testing"
   ],
   "author": "TCC-UFU Team",
   "license": "MIT",
