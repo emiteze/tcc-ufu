@@ -414,7 +414,7 @@ jobs:
           --namespace production \
           --set image.repository=$(echo $IMAGE_URI | cut -d':' -f1) \
           --set image.tag=$VERSION \
-          --set replicaCount=3 \
+          --set replicaCount=1 \
           --set resources.requests.cpu="50m" \
           --set resources.requests.memory="64Mi" \
           --set resources.limits.cpu="200m" \

@@ -200,6 +200,9 @@ jobs:
           --set config.awsRegion=${{ env.AWS_REGION }} \
           --set config.tableName="Customers-dev" \
           --set config.dynamodbEndpoint="https://dynamodb.${{ env.AWS_REGION }}.amazonaws.com" \
+          --set virtualService.gateway="customer-api-dev-gateway" \
+          --set virtualService.backend.host="customer-api-dev.development.svc.cluster.local" \
+          --set virtualService.frontend.host="customer-frontend-dev.development.svc.cluster.local" \
           --wait \
           --timeout=300s
 
@@ -414,10 +417,13 @@ jobs:
           --set image.repository=$(echo $IMAGE_URI | cut -d':' -f1) \
           --set image.tag=$VERSION \
           --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="arn:aws:iam::131204617414:role/tcc-ufu-prod-pod-role" \
-          --set replicaCount=3 \
+          --set replicaCount=1 \
           --set config.awsRegion=${{ env.AWS_REGION }} \
           --set config.tableName="Customers-prod" \
           --set config.dynamodbEndpoint="https://dynamodb.${{ env.AWS_REGION }}.amazonaws.com" \
+          --set virtualService.gateway="customer-api-prod-gateway" \
+          --set virtualService.backend.host="customer-api-prod.production.svc.cluster.local" \
+          --set virtualService.frontend.host="customer-frontend-prod.production.svc.cluster.local" \
           --set resources.requests.cpu="100m" \
           --set resources.requests.memory="128Mi" \
           --set resources.limits.cpu="500m" \
