@@ -63,31 +63,6 @@ output "dynamodb_table_arn" {
   value       = aws_dynamodb_table.customers.arn
 }
 
-output "api_gateway_url" {
-  description = "URL of the API Gateway (integration to be configured post-deployment)"
-  value       = aws_apigatewayv2_stage.customer_api.invoke_url
-}
-
-output "api_gateway_integration_setup" {
-  description = "Commands to setup API Gateway integration after app deployment"
-  value       = <<-EOT
-  # After deploying the application via CI/CD, run these commands to setup API Gateway integration:
-  
-  1. Get the ALB hostname:
-     kubectl get ingress -n default
-  
-  2. Create API Gateway integration:
-     aws apigatewayv2 create-integration --api-id ${aws_apigatewayv2_api.customer_api.id} --integration-type HTTP_PROXY --integration-method ANY --integration-uri http://ALB_HOSTNAME_HERE
-  
-  3. Create route:
-     aws apigatewayv2 create-route --api-id ${aws_apigatewayv2_api.customer_api.id} --route-key "ANY /{proxy+}" --target integrations/INTEGRATION_ID_HERE
-  EOT
-}
-
-output "api_gateway_id" {
-  description = "ID of the API Gateway"
-  value       = aws_apigatewayv2_api.customer_api.id
-}
 
 output "pod_role_arn" {
   description = "ARN of the pod IAM role"
