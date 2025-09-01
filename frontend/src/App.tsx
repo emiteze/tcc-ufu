@@ -37,7 +37,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Customer Management System</h1>
+        <h1>Sistema de Gestão de Clientes</h1>
       </header>
       <main className="App-main">
         {showForm ? (
@@ -50,7 +50,7 @@ function App() {
           <>
             <div className="actions">
               <button className="btn btn-primary" onClick={handleAddNew}>
-                Add New Customer
+                Adicionar novo cliente
               </button>
             </div>
             <CustomerList

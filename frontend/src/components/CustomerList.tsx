@@ -24,41 +24,41 @@ const CustomerList: React.FC<CustomerListProps> = ({ onEdit, onDelete, refreshTr
       const data = await customerApi.getAll();
       setCustomers(data || []);
     } catch (err) {
-      setError('Failed to fetch customers');
-      console.error('Error fetching customers:', err);
+      setError('Falha para carregar clientes');
+      console.error('Erro para carregar clientes:', err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this customer?')) {
+    if (window.confirm('Tem certeza que deseja deletar esse cliente?')) {
       try {
         await customerApi.delete(id);
         onDelete(id);
       } catch (err) {
-        setError('Failed to delete customer');
-        console.error('Error deleting customer:', err);
+        setError('Falha para deletar um cliente');
+        console.error('Erro para deletar um cliente:', err);
       }
     }
   };
 
-  if (loading) return <div className="loading">Loading customers...</div>;
+  if (loading) return <div className="loading">Carregando clientes...</div>;
   if (error) return <div className="error">{error}</div>;
 
   return (
     <div className="customer-list">
-      <h2>Customers</h2>
+      <h2>Clientes</h2>
       {customers.length === 0 ? (
-        <p>No customers found.</p>
+        <p>Não foram encontrados clientes.</p>
       ) : (
         <table className="customer-table">
           <thead>
             <tr>
               <th>ID</th>
-              <th>Name</th>
+              <th>Nome</th>
               <th>Email</th>
-              <th>Actions</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -72,13 +72,13 @@ const CustomerList: React.FC<CustomerListProps> = ({ onEdit, onDelete, refreshTr
                     className="btn btn-edit"
                     onClick={() => onEdit(customer)}
                   >
-                    Edit
+                    Editar
                   </button>
                   <button
                     className="btn btn-delete"
                     onClick={() => handleDelete(customer.id)}
                   >
-                    Delete
+                    Deletar
                   </button>
                 </td>
               </tr>

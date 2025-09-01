@@ -51,8 +51,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customer, onSubmit, onCance
       }
       onSubmit();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to save customer');
-      console.error('Error saving customer:', err);
+      setError(err.response?.data?.error || 'Falha para salvar um cliente');
+      console.error('Erro para salvar um cliente:', err);
     } finally {
       setLoading(false);
     }
@@ -60,12 +60,12 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customer, onSubmit, onCance
 
   return (
     <div className="customer-form">
-      <h2>{customer ? 'Edit Customer' : 'Add New Customer'}</h2>
+      <h2>{customer ? 'Editar cliente' : 'Adicionar novo cliente'}</h2>
       {error && <div className="error">{error}</div>}
       
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="name">Name:</label>
+          <label htmlFor="name">Nome:</label>
           <input
             type="text"
             id="name"
@@ -96,7 +96,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customer, onSubmit, onCance
             className="btn btn-primary"
             disabled={loading}
           >
-            {loading ? 'Saving...' : (customer ? 'Update' : 'Create')}
+            {loading ? 'Salvando...' : (customer ? 'Atualizar' : 'Criar')}
           </button>
           <button
             type="button"
