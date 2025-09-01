@@ -58,6 +58,7 @@ const CustomerList: React.FC<CustomerListProps> = ({ onEdit, onDelete, refreshTr
               <th>ID</th>
               <th>Nome</th>
               <th>Email</th>
+              <th>Telefone</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -67,6 +68,7 @@ const CustomerList: React.FC<CustomerListProps> = ({ onEdit, onDelete, refreshTr
                 <td>{customer.id}</td>
                 <td>{customer.name}</td>
                 <td>{customer.email}</td>
+                <td>{customer.telephone || '-'}</td>
                 <td>
                   <button
                     className="btn btn-edit"
