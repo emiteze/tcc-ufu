@@ -39,7 +39,7 @@ test.describe('Customer List Page', () => {
     await page.reload();
     await page.waitForLoadState('networkidle');
     
-    await expect(page.locator('p:has-text("No customers found")')).toBeVisible();
+    await expect(page.locator('p:has-text("Não foram encontrados clientes")')).toBeVisible();
   });
 
   test('should handle API error gracefully', async ({ page }) => {
@@ -53,7 +53,7 @@ test.describe('Customer List Page', () => {
   });
 
   test('should allow navigation to add customer form', async ({ page }) => {
-    await page.click('button:has-text("Add New Customer")');
+    await page.click('button:has-text("Adicionar novo cliente")');
     await expect(page.locator('.customer-form')).toBeVisible();
   });
 });

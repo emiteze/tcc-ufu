@@ -23,13 +23,13 @@ test.describe('Application Navigation', () => {
     await helpers.navigateToHome();
     
     await expect(page.locator('.App-header h1'))
-      .toContainText('Customer Management System');
+      .toContainText('Sistema de Gestão de Clientes');
   });
 
   test('should display add customer button', async ({ page }) => {
     await helpers.navigateToHome();
     
-    await expect(page.locator('button:has-text("Add New Customer")')).toBeVisible();
+    await expect(page.locator('button:has-text("Adicionar novo cliente")')).toBeVisible();
   });
 
   test('should handle page refresh correctly', async ({ page }) => {

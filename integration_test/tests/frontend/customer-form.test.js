@@ -14,12 +14,12 @@ test.describe('Customer Form', () => {
       await helpers.clearAllRoutes();
       await helpers.mockApiResponse('/customers', []);
       await helpers.navigateToHome();
-      await page.click('button:has-text("Add New Customer")');
+      await page.click('button:has-text("Adicionar novo cliente")');
     });
 
     test('should display create customer form', async ({ page }) => {
       await expect(page.locator('.customer-form')).toBeVisible();
-      await expect(page.locator('.customer-form h2')).toContainText('Add New Customer');
+      await expect(page.locator('.customer-form h2')).toContainText('Adicionar novo cliente');
       await expect(page.locator('input[name="name"]')).toBeVisible();
       await expect(page.locator('input[name="email"]')).toBeVisible();
       await expect(page.locator('button[type="submit"]')).toBeVisible();
@@ -86,7 +86,7 @@ test.describe('Customer Form', () => {
 
     test('should display edit customer form with existing data', async ({ page }) => {
       await expect(page.locator('.customer-form')).toBeVisible();
-      await expect(page.locator('.customer-form h2')).toContainText('Edit Customer');
+      await expect(page.locator('.customer-form h2')).toContainText('Editar cliente');
       
       await expect(page.locator('input[name="name"]')).toHaveValue('John Doe');
       await expect(page.locator('input[name="email"]')).toHaveValue('john@example.com');
