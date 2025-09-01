@@ -22,15 +22,15 @@ describe('CustomerForm', () => {
     
     expect(screen.getByLabelText(/nome/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/telephone/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/telefone/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /criar/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancelar/i })).toBeInTheDocument();
   });
 
   test('updates telephone field value', () => {
     render(<CustomerForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
-    
-    const telephoneInput = screen.getByLabelText(/telephone/i) as HTMLInputElement;
+
+    const telephoneInput = screen.getByLabelText(/telefone/i) as HTMLInputElement;
     fireEvent.change(telephoneInput, { target: { value: '+1-555-0123' } });
     
     expect(telephoneInput.value).toBe('+1-555-0123');
@@ -48,7 +48,7 @@ describe('CustomerForm', () => {
     
     expect((screen.getByLabelText(/nome/i) as HTMLInputElement).value).toBe('John Doe');
     expect((screen.getByLabelText(/email/i) as HTMLInputElement).value).toBe('john@example.com');
-    expect((screen.getByLabelText(/telephone/i) as HTMLInputElement).value).toBe('+1-555-0123');
+    expect((screen.getByLabelText(/telefone/i) as HTMLInputElement).value).toBe('+1-555-0123');
     expect(screen.getByRole('button', { name: /atualizar/i })).toBeInTheDocument();
   });
 
@@ -59,7 +59,7 @@ describe('CustomerForm', () => {
     
     fireEvent.change(screen.getByLabelText(/nome/i), { target: { value: 'John Doe' } });
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } });
-    fireEvent.change(screen.getByLabelText(/telephone/i), { target: { value: '+1-555-0123' } });
+    fireEvent.change(screen.getByLabelText(/telefone/i), { target: { value: '+1-555-0123' } });
     
     fireEvent.click(screen.getByRole('button', { name: /criar/i }));
     
@@ -106,7 +106,7 @@ describe('CustomerForm', () => {
     
     render(<CustomerForm customer={customer} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
     
-    fireEvent.change(screen.getByLabelText(/telephone/i), { target: { value: '+1-555-9999' } });
+    fireEvent.change(screen.getByLabelText(/telefone/i), { target: { value: '+1-555-9999' } });
     fireEvent.click(screen.getByRole('button', { name: /atualizar/i }));
     
     await waitFor(() => {
@@ -122,14 +122,14 @@ describe('CustomerForm', () => {
   test('telephone field is not required', () => {
     render(<CustomerForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
     
-    const telephoneInput = screen.getByLabelText(/telephone/i);
+    const telephoneInput = screen.getByLabelText(/telefone/i);
     expect(telephoneInput).not.toHaveAttribute('required');
   });
 
   test('telephone field accepts various formats', () => {
     render(<CustomerForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
     
-    const telephoneInput = screen.getByLabelText(/telephone/i) as HTMLInputElement;
+    const telephoneInput = screen.getByLabelText(/telefone/i) as HTMLInputElement;
     
     const telephoneFormats = [
       '+1-555-0123',
