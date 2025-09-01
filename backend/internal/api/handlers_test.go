@@ -78,8 +78,9 @@ func TestHandler_CreateCustomer_MissingRequiredFields(t *testing.T) {
 
 func TestHandler_CreateCustomer_ValidDataStructure(t *testing.T) {
 	customer := models.Customer{
-		Name:  "John Doe",
-		Email: "john.doe@example.com",
+		Name:      "John Doe",
+		Email:     "john.doe@example.com",
+		Telephone: "+1-555-0123",
 	}
 
 	jsonData, _ := json.Marshal(customer)
@@ -91,6 +92,7 @@ func TestHandler_CreateCustomer_ValidDataStructure(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "John Doe", testCustomer.Name)
 	assert.Equal(t, "john.doe@example.com", testCustomer.Email)
+	assert.Equal(t, "+1-555-0123", testCustomer.Telephone)
 }
 
 func TestHandler_GetCustomer_MissingID(t *testing.T) {
@@ -161,7 +163,7 @@ func TestCustomerJSONBinding(t *testing.T) {
 	}{
 		{
 			name:    "valid customer",
-			json:    `{"name":"John Doe","email":"john.doe@example.com"}`,
+			json:    `{"name":"John Doe","email":"john.doe@example.com","telephone":"+1-555-0123"}`,
 			wantErr: false,
 		},
 		{
@@ -188,6 +190,16 @@ func TestCustomerJSONBinding(t *testing.T) {
 			name:    "empty email",
 			json:    `{"name":"John Doe","email":""}`,
 			wantErr: true,
+		},
+		{
+			name:    "valid customer without telephone",
+			json:    `{"name":"John Doe","email":"john.doe@example.com"}`,
+			wantErr: false,
+		},
+		{
+			name:    "valid customer with empty telephone",
+			json:    `{"name":"John Doe","email":"john.doe@example.com","telephone":""}`,
+			wantErr: false,
 		},
 	}
 

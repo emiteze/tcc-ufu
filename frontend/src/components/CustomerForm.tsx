@@ -12,6 +12,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customer, onSubmit, onCance
   const [formData, setFormData] = useState<CreateCustomer>({
     name: '',
     email: '',
+    telephone: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,11 +22,13 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customer, onSubmit, onCance
       setFormData({
         name: customer.name,
         email: customer.email,
+        telephone: customer.telephone,
       });
     } else {
       setFormData({
         name: '',
         email: '',
+        telephone: '',
       });
     }
   }, [customer]);
@@ -90,6 +93,18 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customer, onSubmit, onCance
           />
         </div>
         
+        <div className="form-group">
+          <label htmlFor="telephone">Telefone:</label>
+          <input
+            type="tel"
+            id="telephone"
+            name="telephone"
+            value={formData.telephone}
+            onChange={handleChange}
+            disabled={loading}
+          />
+        </div>
+        
         <div className="form-actions">
           <button
             type="submit"
@@ -104,7 +119,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customer, onSubmit, onCance
             onClick={onCancel}
             disabled={loading}
           >
-            Cancel
+            Cancelar
           </button>
         </div>
       </form>

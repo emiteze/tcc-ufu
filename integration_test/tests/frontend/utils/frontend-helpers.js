@@ -44,6 +44,9 @@ class FrontendHelpers {
     if (customerData.email !== undefined) {
       await this.page.fill('input[name="email"]', customerData.email);
     }
+    if (customerData.telephone !== undefined) {
+      await this.page.fill('input[name="telephone"]', customerData.telephone);
+    }
   }
 
   async submitCustomerForm() {
@@ -101,9 +104,11 @@ class FrontendHelpers {
     const customerElement = this.page.locator('.customer-table tbody tr').nth(index);
     const name = await customerElement.locator('td').nth(1).textContent(); // Name is second column
     const email = await customerElement.locator('td').nth(2).textContent(); // Email is third column
+    const telephone = await customerElement.locator('td').nth(3).textContent(); // Telephone is fourth column
     return {
       name: name?.trim(),
-      email: email?.trim()
+      email: email?.trim(),
+      telephone: telephone?.trim()
     };
   }
 

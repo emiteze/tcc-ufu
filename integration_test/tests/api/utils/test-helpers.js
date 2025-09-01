@@ -20,7 +20,8 @@ class TestHelpers {
     const timestamp = Date.now();
     return {
       name: `Test Customer ${timestamp}`,
-      email: `test.customer.${timestamp}@example.com`
+      email: `test.customer.${timestamp}@example.com`,
+      telephone: `+1-555-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
     };
   }
 
@@ -46,6 +47,9 @@ class TestHelpers {
     expect(createdCustomer).toHaveProperty('id');
     expect(createdCustomer.name).toBe(customer.name);
     expect(createdCustomer.email).toBe(customer.email);
+    if (customer.telephone !== undefined) {
+      expect(createdCustomer.telephone).toBe(customer.telephone);
+    }
     
     return createdCustomer;
   }
@@ -71,6 +75,7 @@ class TestHelpers {
     expect(customer).toHaveProperty('id');
     expect(customer).toHaveProperty('name');
     expect(customer).toHaveProperty('email');
+    expect(customer).toHaveProperty('telephone');
     
     expect(typeof customer.id).toBe('string');
     expect(customer.id).toBeTruthy();
@@ -81,9 +86,15 @@ class TestHelpers {
     expect(typeof customer.email).toBe('string');
     expect(customer.email).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
     
+    expect(typeof customer.telephone).toBe('string');
+    // Telephone field is optional, can be empty string
+    
     if (expectedData) {
       expect(customer.name).toBe(expectedData.name);
       expect(customer.email).toBe(expectedData.email);
+      if (expectedData.telephone !== undefined) {
+        expect(customer.telephone).toBe(expectedData.telephone);
+      }
     }
   }
 
